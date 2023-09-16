@@ -1,6 +1,11 @@
 package values
 
 type LogLine struct {
-	Counter   int    `json:"counter"`
+	ID   int    `json:"id"`
 	Timestamp string `json:"timestamp"`
+}
+
+
+type Response struct {
+	Counter int `json:"counter"`
 }

@@ -15,7 +15,8 @@ const address string = "localhost:8080"
 const windowSize int = 60
 
 // Make this variable Upper case to access it on the handlers file when we have it
-var counter values.LogLine = values.LogLine{}
+var RequestsCounter int
+var CounterID int
 var lock sync.Mutex
 
 var logFilePath string = "logs.txt"
@@ -25,14 +26,20 @@ func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
 
 	timestamp := time.Now().Local().Format(time.RFC3339)
 
-	counter.Counter += 1
-	counter.Timestamp = timestamp
+	RequestsCounter, CounterID, err := services.ReadLogLines(logFilePath, windowSize)
 
-	fmt.Println(counter)
+	var logLine values.LogLine
+	logLine.ID = CounterID + 1
+	logLine.Timestamp = timestamp
 
-	services.WriteToFile(logFilePath, &counter)
+	fmt.Println(logLine)
 
-	jsonResponse, err := json.Marshal(counter)
+	services.WriteToFile(logFilePath, &logLine)
+
+	// Create a Response value to output to the user
+	response := values.Response{Counter: RequestsCounter}
+
+	jsonResponse, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil, err
@@ -66,22 +73,17 @@ func main() {
 	}
 
 	if exists {
-		line, actualCounter, err := services.ReadLastLine(logFilePath, windowSize)
+		RequestsCounter, CounterID, err := services.ReadLogLines(logFilePath, windowSize)
 
-		fmt.Printf("Actual counter %d\n", actualCounter)
+		fmt.Printf("Actual counter %d\n", RequestsCounter)
+		fmt.Printf("Counter ID is at %d\n", CounterID)
 
 		if err != nil {
 			log.Fatal(err)
 			panic(err)
 		}
 
-		err = json.Unmarshal([]byte(line), &counter)
-		if err != nil {
-			fmt.Printf("Error unmarshaling JSON: %v\n", err)
-			panic(err)
-		}
-		fmt.Println(line)
-		fmt.Println(counter)
+		fmt.Println(RequestsCounter)
 	}
 
 	handler := http.HandlerFunc(Counter)
