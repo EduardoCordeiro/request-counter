@@ -12,7 +12,9 @@ import (
 )
 
 const address string = "localhost:8080"
+const windowSize int = 60
 
+// Make this variable Upper case to access it on the handlers file when we have it
 var counter values.LogLine = values.LogLine{}
 var lock sync.Mutex
 
@@ -64,7 +66,9 @@ func main() {
 	}
 
 	if exists {
-		line, err := services.ReadLastLine(logFilePath)
+		line, actualCounter, err := services.ReadLastLine(logFilePath, windowSize)
+
+		fmt.Printf("Actual counter %d\n", actualCounter)
 
 		if err != nil {
 			log.Fatal(err)

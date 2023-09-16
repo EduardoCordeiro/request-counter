@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"simpleinsurance/values"
+	"strings"
+	"time"
 )
 
 func FileExists(filename string) bool {
@@ -68,11 +70,17 @@ func InitFile(filePath string) (bool, error) {
 	return false, nil
 }
 
-func ReadLastLine(filepath string) (string, error) {
+// this code will return the value of the last line, current counter for the ids of the requests
+// Plus read the X amount of lines in the
+func ReadLastLine(filepath string, windowSize int) (string, int, error) {
+
+	// Actual counter inside the window
+	var counter int = 0
+
 	file, err := os.Open(filepath)
 
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer file.Close()
 
@@ -87,9 +95,46 @@ func ReadLastLine(filepath string) (string, error) {
 		char := make([]byte, 1)
 		file.Read(char)
 
+		fmt.Printf("Char %s\n", string(char))
+
 		// Stop when we find the end of the previous line
 		if cursor != -1 && (char[0] == 10 || char[0] == 13) {
-			break
+
+			// Read lines, but only break when the Time.Duration > windowSize
+			line = strings.ReplaceAll(line, "\x0A", "")
+			line = strings.ReplaceAll(line, "\n", "")
+			fmt.Println(line)
+
+			var logLine values.LogLine
+			err = json.Unmarshal([]byte(line), &logLine)
+			if err != nil {
+				fmt.Printf("Error unmarshaling JSON: %v\n", err)
+				panic(err)
+			}
+
+			lineTime, err := time.Parse(time.RFC3339, logLine.Timestamp)
+
+			if err != nil {
+				fmt.Printf("Error parsing time: %v\n", err)
+				return "", 0, err
+			}
+
+			now := time.Now().Local().Format(time.RFC3339)
+			nowTime, err := time.Parse(time.RFC3339, now)
+
+			windowDuration := time.Duration(time.Duration(windowSize) * time.Second)
+
+			duration := nowTime.Sub(lineTime)
+
+			fmt.Println("Duration")
+			fmt.Println(duration)
+
+			if duration <= windowDuration {
+				counter++
+				line = ""
+			} else {
+				break
+			}
 		}
 
 		line = fmt.Sprintf("%s%s", string(char), line)
@@ -99,7 +144,7 @@ func ReadLastLine(filepath string) (string, error) {
 		}
 	}
 
-	return line, nil
+	return line, counter, nil
 }
 
 func WriteToFile(filePath string, counter *values.LogLine) {
@@ -124,7 +169,7 @@ func WriteToFile(filePath string, counter *values.LogLine) {
 	fmt.Println(jsonString)
 
 	// Append the new line to the file.
-	_, err = file.WriteString(jsonString + "\n")
+	_, err = file.WriteString("\n" + jsonString)
 	if err != nil {
 		fmt.Printf("Error appending to file: %v\n", err)
 		return
