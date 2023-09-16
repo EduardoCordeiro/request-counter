@@ -2,10 +2,12 @@ package services
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"simpleinsurance/values"
 )
 
 func FileExists(filename string) bool {
@@ -98,4 +100,35 @@ func ReadLastLine(filepath string) (string, error) {
 	}
 
 	return line, nil
+}
+
+func WriteToFile(filePath string, counter *values.LogLine) {
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	// Write to file
+	jsonData, err := json.Marshal(counter)
+	if err != nil {
+		fmt.Printf("Error marshaling JSON: %v\n", err)
+		return
+	}
+
+	// Convert the JSON data to a string.
+	jsonString := string(jsonData)
+
+	fmt.Println(jsonString)
+
+	// Append the new line to the file.
+	_, err = file.WriteString(jsonString + "\n")
+	if err != nil {
+		fmt.Printf("Error appending to file: %v\n", err)
+		return
+	}
+
+	return
 }

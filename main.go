@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"simpleinsurance/services"
 	"simpleinsurance/values"
 	"sync"
@@ -14,55 +13,24 @@ import (
 
 const address string = "localhost:8080"
 
-var newCounter values.LogLine = values.LogLine{}
+var counter values.LogLine = values.LogLine{}
 var lock sync.Mutex
 
 var logFilePath string = "logs.txt"
-
-func WriteToFile() {
-
-	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		return
-	}
-	defer file.Close()
-
-	// Write to file
-	jsonData, err := json.Marshal(newCounter)
-	if err != nil {
-		fmt.Printf("Error marshaling JSON: %v\n", err)
-		return
-	}
-
-	// Convert the JSON data to a string.
-	jsonString := string(jsonData)
-
-	fmt.Println(jsonString)
-
-	// Append the new line to the file.
-	_, err = file.WriteString(jsonString + "\n")
-	if err != nil {
-		fmt.Printf("Error appending to file: %v\n", err)
-		return
-	}
-
-	return
-}
 
 func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
 	lock.Lock()
 
 	timestamp := time.Now().Local().Format(time.RFC3339)
 
-	newCounter.Counter += 1
-	newCounter.Timestamp = timestamp
+	counter.Counter += 1
+	counter.Timestamp = timestamp
 
-	fmt.Println(newCounter)
+	fmt.Println(counter)
 
-	WriteToFile()
+	services.WriteToFile(logFilePath, &counter)
 
-	jsonResponse, err := json.Marshal(newCounter)
+	jsonResponse, err := json.Marshal(counter)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil, err
@@ -103,13 +71,13 @@ func main() {
 			panic(err)
 		}
 
-		err = json.Unmarshal([]byte(line), &newCounter)
+		err = json.Unmarshal([]byte(line), &counter)
 		if err != nil {
 			fmt.Printf("Error unmarshaling JSON: %v\n", err)
 			panic(err)
 		}
 		fmt.Println(line)
-		fmt.Println(newCounter)
+		fmt.Println(counter)
 	}
 
 	handler := http.HandlerFunc(Counter)

@@ -12,3 +12,4 @@ persisting data to a file.
 1. Actually implement the moving window
 2. Tests
 3. Clean up code
+4. Add Makefile to run code + tests
