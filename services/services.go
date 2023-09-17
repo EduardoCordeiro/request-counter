@@ -81,9 +81,8 @@ func parseLogLine(line string) (values.LogLine, error) {
 	return logLine, nil
 }
 
-// this code will return the value of the last line, current counter for the ids of the requests
-// Plus read the X amount of lines in the
 func ReadLogLines(filepath string, windowSize int) (int, int, error) {
+	// This code returns the value of the last line, current counter for the ids of the requests
 
 	file, err := os.Open(filepath)
 
@@ -95,7 +94,7 @@ func ReadLogLines(filepath string, windowSize int) (int, int, error) {
 	// Actual counter inside the window
 	var counter int = 0
 	// Last ID written
-	var id int = 0
+	var id int = -1
 	line := ""
 	var cursor int64 = 0
 	stat, _ := file.Stat()
@@ -114,35 +113,25 @@ func ReadLogLines(filepath string, windowSize int) (int, int, error) {
 
 		// Stop when we find the end of the previous line
 		if cursor != -1 && (char[0] == 10 || char[0] == 13) {
-
-			line = strings.ReplaceAll(line, "\x0A", "")
-			line = strings.ReplaceAll(line, "\n", "")
-
-			logLine, err := parseLogLine(line)
+			insideWindow, err := checkDuration(line, windowSize)
 			if err != nil {
 				return 0, 0, err
 			}
 
-			lineTime, err := time.Parse(time.RFC3339, logLine.Timestamp)
-			if err != nil {
-				fmt.Printf("Error parsing time: %v\n", err)
-				return 0, 0, err
+			if id == -1 {
+				logLine, err := parseLogLine(line)
+				if err != nil {
+					return 0, 0, err
+				}
+
+				id = logLine.ID + 1
 			}
-
-			now := time.Now().Local().Format(time.RFC3339)
-			nowTime, err := time.Parse(time.RFC3339, now)
-
-			windowDuration := time.Duration(time.Duration(windowSize) * time.Second)
-
-			duration := nowTime.Sub(lineTime)
 
 			// Only break when we find the first log after the window is over
-			if duration <= windowDuration {
+			if insideWindow {
 				counter++
 				line = ""
-				fmt.Println(counter)
 			} else {
-				id = logLine.ID
 				break
 			}
 		}
@@ -153,7 +142,59 @@ func ReadLogLines(filepath string, windowSize int) (int, int, error) {
 			break
 		}
 	}
+
+	// Case where there is only one line
+	// loop above does not reach because there is no new line before
+	if line != "" {
+		insideWindow, err := checkDuration(line, windowSize)
+		if err != nil {
+			return 0, 0, err
+		}
+		if insideWindow {
+			counter++
+		}
+
+		if id == -1 {
+			logLine, err := parseLogLine(line)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			id = logLine.ID + 1
+		}
+	}
+
 	return counter, id, nil
+}
+
+func checkDuration(line string, windowSize int) (bool, error) {
+
+	line = strings.ReplaceAll(line, "\x0A", "")
+	line = strings.ReplaceAll(line, "\n", "")
+
+	logLine, err := parseLogLine(line)
+	if err != nil {
+		return false, err
+	}
+
+	lineTime, err := time.Parse(time.RFC3339, logLine.Timestamp)
+	if err != nil {
+		fmt.Printf("Error parsing time: %v\n", err)
+		return false, err
+	}
+
+	now := time.Now().Local().Format(time.RFC3339)
+	nowTime, err := time.Parse(time.RFC3339, now)
+
+	windowDuration := time.Duration(time.Duration(windowSize) * time.Second)
+
+	duration := nowTime.Sub(lineTime)
+
+	if duration <= windowDuration {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func WriteToFile(filePath string, counter *values.LogLine) {
