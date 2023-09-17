@@ -45,7 +45,6 @@ func writeTestLogToFile(t *testing.T, filePath string, lines []string) {
 }
 
 func TestParseValidLogLine(t *testing.T) {
-	// Test valid input
 	validLogLine := `{"id":1,"timestamp":"2023-09-16T16:57:18+08:00"}`
 	expectedLogLine := values.LogLine{
 		ID:        1,
@@ -62,7 +61,6 @@ func TestParseValidLogLine(t *testing.T) {
 }
 
 func TestParseInvalidLogLine(t *testing.T) {
-	// Test invalid input
 	invalidLogLine := `invalid JSON`
 	_, err := parseLogLine(invalidLogLine)
 	if err == nil {
@@ -70,14 +68,31 @@ func TestParseInvalidLogLine(t *testing.T) {
 	}
 }
 
+func TestReadLogLinesEmpty(t *testing.T) {
+	logFilePath := "test.log"
+	testLogLines := []string{}
+	writeTestLogToFile(t, logFilePath, testLogLines)
+
+	windowSize := 10
+	counter, id, err := ParseLogFile(logFilePath, windowSize)
+
+	if err != nil {
+		t.Errorf("Error reading log lines: %v", err)
+	}
+	if counter != 0 {
+		t.Errorf("Expected counter: 0, Got: %d", counter)
+	}
+	if id != 0 {
+		t.Errorf("Expected ID: 0, Got: %d", id)
+	}
+}
+
 func TestReadLogLinesInside(t *testing.T) {
-	// Create a temporary test log file with log lines
 	logFilePath := "test.log"
 	times := []int{20, 40}
 	testLogLines := generateLogs(times)
 	writeTestLogToFile(t, logFilePath, testLogLines)
 
-	// Test reading log lines within a 1-minute window
 	windowSize := 60
 	counter, id, err := ParseLogFile(logFilePath, windowSize)
 	if err != nil {
@@ -92,7 +107,6 @@ func TestReadLogLinesInside(t *testing.T) {
 }
 
 func TestReadLogLinesOutside(t *testing.T) {
-	// Create a temporary test log file with log lines
 	logFilePath := "test.log"
 	times := []int{20, 40}
 	testLogLines := generateLogs(times)
