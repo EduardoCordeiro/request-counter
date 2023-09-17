@@ -2,11 +2,11 @@ package services
 
 import (
 	"bufio"
+	"counter/values"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"simpleinsurance/values"
 )
 
 func FileExists(filename string) bool {

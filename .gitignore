@@ -21,4 +21,4 @@
 go.work
 
 # Test logs file
-logs.txt
+requests.log

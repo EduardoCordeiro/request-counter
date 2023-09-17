@@ -1,11 +1,11 @@
 package main
 
 import (
+	"counter/handlers"
+	"counter/services"
 	"fmt"
 	"log"
 	"net/http"
-	"simpleinsurance/handlers"
-	"simpleinsurance/services"
 	"sync"
 )
 
@@ -28,14 +28,12 @@ func startup() error {
 	}
 
 	if exists {
-		RequestsCounter, _, err := services.ParseLogFile(logFilePath, windowSize)
+		_, _, err := services.ParseLogFile(logFilePath, windowSize)
 
 		if err != nil {
 			log.Fatal(err)
 			return err
 		}
-
-		fmt.Println(RequestsCounter)
 	}
 
 	return nil
@@ -54,7 +52,7 @@ func Counter(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Println("Starting Server")
+	fmt.Println("Starting Server...")
 
 	err := startup()
 	if err != nil {

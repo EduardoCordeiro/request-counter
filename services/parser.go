@@ -1,11 +1,11 @@
 package services
 
 import (
+	"counter/values"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"simpleinsurance/values"
 )
 
 func parseLogLine(line string) (values.LogLine, error) {

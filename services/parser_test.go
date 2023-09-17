@@ -1,9 +1,9 @@
 package services
 
 import (
+	"counter/values"
 	"fmt"
 	"os"
-	"simpleinsurance/values"
 	"testing"
 	"time"
 )

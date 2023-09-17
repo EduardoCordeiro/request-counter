@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"counter/services"
+	"counter/values"
 	"encoding/json"
 	"net/http"
-	"simpleinsurance/services"
-	"simpleinsurance/values"
 	"sync"
 	"time"
 )
