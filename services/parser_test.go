@@ -79,7 +79,7 @@ func TestReadLogLinesInside(t *testing.T) {
 
 	// Test reading log lines within a 1-minute window
 	windowSize := 60
-	counter, id, err := ReadLogLines(logFilePath, windowSize)
+	counter, id, err := ParseLogFile(logFilePath, windowSize)
 	if err != nil {
 		t.Errorf("Error reading log lines: %v", err)
 	}
@@ -99,7 +99,7 @@ func TestReadLogLinesOutside(t *testing.T) {
 	writeTestLogToFile(t, logFilePath, testLogLines)
 
 	windowSize := 10
-	counter, id, err := ReadLogLines(logFilePath, windowSize)
+	counter, id, err := ParseLogFile(logFilePath, windowSize)
 
 	if err != nil {
 		t.Errorf("Error reading log lines: %v", err)
@@ -109,40 +109,5 @@ func TestReadLogLinesOutside(t *testing.T) {
 	}
 	if id != 2 {
 		t.Errorf("Expected ID: 2, Got: %d", id)
-	}
-}
-
-func TestCheckDuration(t *testing.T) {
-
-	// Test within the window
-	line := generateLogLine(1, 40)
-	windowSize := 300
-	result, err := checkDuration(line, windowSize)
-	fmt.Println("resultado")
-	fmt.Println(result)
-	if err != nil {
-		t.Errorf("Error checking duration: %v", err)
-	}
-	if !result {
-		t.Errorf("Expected result: true, Got: false")
-	}
-
-	// Test outside the window
-	line = `{"id":1,"timestamp":"2023-09-16T16:56:00+08:00"}`
-	windowSize = 20
-	result, err = checkDuration(line, windowSize)
-	if err != nil {
-		t.Errorf("Error checking duration: %v", err)
-	}
-	if result {
-		t.Errorf("Expected result: false, Got: true")
-	}
-
-	// Test invalid timestamp
-	line = `{"id":1,"timestamp":"invalid-timestamp"}`
-	windowSize = 60
-	_, err = checkDuration(line, windowSize)
-	if err == nil {
-		t.Errorf("Expected error for invalid timestamp, but got nil")
 	}
 }
