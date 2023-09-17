@@ -48,7 +48,6 @@ func InitFile(filePath string) (bool, error) {
 	var err error
 
 	if fileExists {
-		fmt.Println("File Exists!")
 		file, err = os.Open(filePath)
 
 		if err != nil {
@@ -59,7 +58,6 @@ func InitFile(filePath string) (bool, error) {
 
 		return true, nil
 	} else {
-		fmt.Println("Creating a new data file!")
 		file, err = os.Create(filePath)
 		if err != nil {
 			fmt.Printf("Error opening data file: %v\n", err)
