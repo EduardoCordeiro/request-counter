@@ -19,7 +19,7 @@ var RequestsCounter int
 var CounterID int
 var lock sync.Mutex
 
-var logFilePath string = "logs.txt"
+var logFilePath string = "requests.log"
 
 func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
 	lock.Lock()
@@ -29,10 +29,8 @@ func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
 	RequestsCounter, CounterID, err := services.ReadLogLines(logFilePath, windowSize)
 
 	var logLine values.LogLine
-	logLine.ID = CounterID + 1
+	logLine.ID = CounterID
 	logLine.Timestamp = timestamp
-
-	fmt.Println(logLine)
 
 	services.WriteToFile(logFilePath, &logLine)
 
@@ -50,6 +48,28 @@ func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
 	return &jsonResponse, nil
 }
 
+func startup() error {
+	exists, err := services.InitFile(logFilePath)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	if exists {
+		RequestsCounter, _, err := services.ReadLogLines(logFilePath, windowSize)
+
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+
+		fmt.Println(RequestsCounter)
+	}
+
+	return nil
+}
+
 func Counter(w http.ResponseWriter, r *http.Request) {
 	response, err := UpdateCounter(w)
 
@@ -65,25 +85,10 @@ func Counter(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("Starting Server")
 
-	exists, err := services.InitFile(logFilePath)
-
+	err := startup()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Server has encountered a problem")
 		panic(err)
-	}
-
-	if exists {
-		RequestsCounter, CounterID, err := services.ReadLogLines(logFilePath, windowSize)
-
-		fmt.Printf("Actual counter %d\n", RequestsCounter)
-		fmt.Printf("Counter ID is at %d\n", CounterID)
-
-		if err != nil {
-			log.Fatal(err)
-			panic(err)
-		}
-
-		fmt.Println(RequestsCounter)
 	}
 
 	handler := http.HandlerFunc(Counter)
@@ -93,5 +98,6 @@ func main() {
 
 	if err != nil {
 		log.Fatal("Server has encountered a problem")
+		panic(err)
 	}
 }
