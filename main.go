@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"simpleinsurance/handlers"
 	"simpleinsurance/services"
-	"simpleinsurance/values"
 	"sync"
-	"time"
 )
 
 const address string = "localhost:8080"
@@ -21,33 +19,6 @@ var lock sync.Mutex
 
 var logFilePath string = "requests.log"
 
-func UpdateCounter(w http.ResponseWriter) (*[]byte, error) {
-	lock.Lock()
-
-	timestamp := time.Now().Local().Format(time.RFC3339)
-
-	RequestsCounter, CounterID, err := services.ReadLogLines(logFilePath, windowSize)
-
-	var logLine values.LogLine
-	logLine.ID = CounterID
-	logLine.Timestamp = timestamp
-
-	services.WriteToFile(logFilePath, &logLine)
-
-	// Create a Response value to output to the user
-	response := values.Response{Counter: RequestsCounter}
-
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil, err
-	}
-
-	lock.Unlock()
-
-	return &jsonResponse, nil
-}
-
 func startup() error {
 	exists, err := services.InitFile(logFilePath)
 
@@ -57,7 +28,7 @@ func startup() error {
 	}
 
 	if exists {
-		RequestsCounter, _, err := services.ReadLogLines(logFilePath, windowSize)
+		RequestsCounter, _, err := services.ParseLogFile(logFilePath, windowSize)
 
 		if err != nil {
 			log.Fatal(err)
@@ -71,7 +42,7 @@ func startup() error {
 }
 
 func Counter(w http.ResponseWriter, r *http.Request) {
-	response, err := UpdateCounter(w)
+	response, err := handlers.UpdateCounter(w, logFilePath, windowSize)
 
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
