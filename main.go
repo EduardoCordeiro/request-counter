@@ -37,15 +37,18 @@ func startup() error {
 }
 
 func Counter(w http.ResponseWriter, r *http.Request) {
-	response, err := handlers.UpdateCounter(w, logFilePath, windowSize)
 
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		panic(err)
-	}
+	go func() {
+		response, err := handlers.UpdateCounter(w, logFilePath, windowSize)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(*response)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			panic(err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(*response)
+	}()
 }
 
 func main() {
