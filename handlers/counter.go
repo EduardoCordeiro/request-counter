@@ -14,11 +14,13 @@ var lock sync.Mutex
 func UpdateCounter(w http.ResponseWriter, logFilePath string, windowSize int) (*[]byte, error) {
 	lock.Lock()
 
+	defer lock.Unlock()
+
 	timestamp := time.Now().Local().Format(time.RFC3339)
 
 	RequestsCounter, CounterID, err := services.ParseLogFile(logFilePath, windowSize)
 	if err != nil {
-		// TODO add a print or something
+		http.Error(w, "Error parsing the log file", http.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -28,7 +30,7 @@ func UpdateCounter(w http.ResponseWriter, logFilePath string, windowSize int) (*
 
 	err = services.WriteToFile(logFilePath, &logLine)
 	if err != nil {
-		// TODO add a print or something
+		http.Error(w, "Error writing to the log file", http.StatusInternalServerError)
 		return nil, err
 	}
 	// Create a Response value to output to the user
@@ -39,8 +41,6 @@ func UpdateCounter(w http.ResponseWriter, logFilePath string, windowSize int) (*
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil, err
 	}
-
-	lock.Unlock()
 
 	return &jsonResponse, nil
 }
