@@ -4,7 +4,6 @@ import (
 	"counter/values"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -16,31 +15,20 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func InitFile(filePath string) (bool, error) {
+func CreateFile(filePath string) error {
 	fileExists := FileExists(filePath)
 
-	var file *os.File
 	var err error
 
-	if fileExists {
-		file, err = os.Open(filePath)
-
-		if err != nil {
-			log.Fatal(err)
-			return false, err
-		}
-		defer file.Close()
-
-		return true, nil
-	} else {
-		file, err = os.Create(filePath)
+	if !fileExists {
+		_, err = os.Create(filePath)
 		if err != nil {
 			fmt.Printf("Error opening data file: %v\n", err)
-			return false, err
+			return err
 		}
 	}
 
-	return false, nil
+	return nil
 }
 
 func WriteToFile(filePath string, counter *values.LogLine) error {

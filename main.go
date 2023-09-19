@@ -16,20 +16,11 @@ var CounterID int
 var logFilePath string = "requests.log"
 
 func startup(path string) error {
-	exists, err := services.InitFile(path)
-
+	// Function to create or load a file, in case it exists
+	err := services.CreateFile(path)
 	if err != nil {
 		log.Fatal(err)
 		return err
-	}
-
-	if exists {
-		_, _, err := services.ParseLogFile(path, windowSize)
-
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
 	}
 
 	return nil
