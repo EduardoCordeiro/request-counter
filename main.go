@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 )
 
 const address string = "localhost:8080"
 const windowSize int = 60
 
-// Make this variable Upper case to access it on the handlers file when we have it
 var RequestsCounter int
 var CounterID int
-var lock sync.Mutex
 
 var logFilePath string = "requests.log"
 
