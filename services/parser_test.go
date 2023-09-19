@@ -59,14 +59,6 @@ func writeTestLogToFile(t *testing.T, filePath string, lines []string) {
 	}
 }
 
-func deleteLogFile(logFilePath string) error {
-	err := os.Remove(logFilePath)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func TestParseLogLine(t *testing.T) {
 	testCases := []ParseLogLineTestCase{
 		{
@@ -146,7 +138,7 @@ func TestReadLogLines(t *testing.T) {
 				t.Errorf("Expected ID: %d, Got: %d", testCase.ExpectedID, id)
 			}
 
-			err = deleteLogFile(logFilePath)
+			err = DeleteLogFile(logFilePath)
 			if err != nil {
 				t.Fatalf("Error removing the file: %v", err)
 			}
