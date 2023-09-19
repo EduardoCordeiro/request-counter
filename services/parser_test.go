@@ -8,6 +8,21 @@ import (
 	"time"
 )
 
+type ParseLogLineTestCase struct {
+	Description string
+	Input       string
+	Expected    values.LogLine
+	ShouldError bool
+}
+
+type ReadLogLinesTestCase struct {
+	Description     string
+	LogLines        []string
+	WindowSize      int
+	ExpectedCounter int
+	ExpectedID      int
+}
+
 func generateLogs(times []int) []string {
 	var logs []string
 	var counter int = 0
@@ -44,84 +59,97 @@ func writeTestLogToFile(t *testing.T, filePath string, lines []string) {
 	}
 }
 
-func TestParseValidLogLine(t *testing.T) {
-	validLogLine := `{"id":1,"timestamp":"2023-09-16T16:57:18+08:00"}`
-	expectedLogLine := values.LogLine{
-		ID:        1,
-		Timestamp: "2023-09-16T16:57:18+08:00",
+func deleteLogFile(logFilePath string) error {
+	err := os.Remove(logFilePath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func TestParseLogLine(t *testing.T) {
+	testCases := []ParseLogLineTestCase{
+		{
+			Description: "Valid input",
+			Input:       `{"id":1,"timestamp":"2023-09-16T16:57:18+08:00"}`,
+			Expected: values.LogLine{
+				ID:        1,
+				Timestamp: "2023-09-16T16:57:18+08:00",
+			},
+			ShouldError: false,
+		},
+		{
+			Description: "Invalid input",
+			Input:       `invalid`,
+			ShouldError: true,
+		},
 	}
 
-	parsedLogLine, err := parseLogLine(validLogLine)
-	if err != nil {
-		t.Errorf("Error parsing valid log line: %v", err)
-	}
-	if parsedLogLine != expectedLogLine {
-		t.Errorf("Expected: %+v, Got: %+v", expectedLogLine, parsedLogLine)
+	for _, testCase := range testCases {
+		t.Run(testCase.Description, func(t *testing.T) {
+			parsedLogLine, err := parseLogLine(testCase.Input)
+
+			if testCase.ShouldError {
+				if err == nil {
+					t.Errorf("Expected error, but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if parsedLogLine != testCase.Expected {
+					t.Errorf("Expected: %+v, Got: %+v", testCase.Expected, parsedLogLine)
+				}
+			}
+		})
 	}
 }
 
-func TestParseInvalidLogLine(t *testing.T) {
-	invalidLogLine := `invalid JSON`
-	_, err := parseLogLine(invalidLogLine)
-	if err == nil {
-		t.Errorf("Expected error for invalid JSON, but got nil")
+func TestReadLogLines(t *testing.T) {
+	testCases := []ReadLogLinesTestCase{
+		{
+			Description:     "Empty Log",
+			LogLines:        []string{},
+			WindowSize:      10,
+			ExpectedCounter: 0,
+			ExpectedID:      0,
+		},
+		{
+			Description:     "Log Inside Window",
+			LogLines:        generateLogs([]int{20, 40}),
+			WindowSize:      60,
+			ExpectedCounter: 2,
+			ExpectedID:      2,
+		},
+		{
+			Description:     "Log Outside Window",
+			LogLines:        generateLogs([]int{20, 40}),
+			WindowSize:      10,
+			ExpectedCounter: 0,
+			ExpectedID:      2,
+		},
 	}
-}
 
-func TestReadLogLinesEmpty(t *testing.T) {
-	logFilePath := "test.log"
-	testLogLines := []string{}
-	writeTestLogToFile(t, logFilePath, testLogLines)
+	for _, testCase := range testCases {
+		t.Run(testCase.Description, func(t *testing.T) {
+			logFilePath := "test.log"
+			writeTestLogToFile(t, logFilePath, testCase.LogLines)
 
-	windowSize := 10
-	counter, id, err := ParseLogFile(logFilePath, windowSize)
+			counter, id, err := ParseLogFile(logFilePath, testCase.WindowSize)
+			if err != nil {
+				t.Errorf("Error reading log lines: %v", err)
+			}
+			if counter != testCase.ExpectedCounter {
+				t.Errorf("Expected counter: %d, Got: %d", testCase.ExpectedCounter, counter)
+			}
+			if id != testCase.ExpectedID {
+				t.Errorf("Expected ID: %d, Got: %d", testCase.ExpectedID, id)
+			}
 
-	if err != nil {
-		t.Errorf("Error reading log lines: %v", err)
-	}
-	if counter != 0 {
-		t.Errorf("Expected counter: 0, Got: %d", counter)
-	}
-	if id != 0 {
-		t.Errorf("Expected ID: 0, Got: %d", id)
-	}
-}
-
-func TestReadLogLinesInside(t *testing.T) {
-	logFilePath := "test.log"
-	times := []int{20, 40}
-	testLogLines := generateLogs(times)
-	writeTestLogToFile(t, logFilePath, testLogLines)
-
-	windowSize := 60
-	counter, id, err := ParseLogFile(logFilePath, windowSize)
-	if err != nil {
-		t.Errorf("Error reading log lines: %v", err)
-	}
-	if counter != len(testLogLines) {
-		t.Errorf("Expected counter: %d, Got: %d", len(testLogLines), counter)
-	}
-	if id != len(testLogLines) {
-		t.Errorf("Expected ID: 2, Got: %d", id)
-	}
-}
-
-func TestReadLogLinesOutside(t *testing.T) {
-	logFilePath := "test.log"
-	times := []int{20, 40}
-	testLogLines := generateLogs(times)
-	writeTestLogToFile(t, logFilePath, testLogLines)
-
-	windowSize := 10
-	counter, id, err := ParseLogFile(logFilePath, windowSize)
-
-	if err != nil {
-		t.Errorf("Error reading log lines: %v", err)
-	}
-	if counter != 0 {
-		t.Errorf("Expected counter: 0, Got: %d", counter)
-	}
-	if id != 2 {
-		t.Errorf("Expected ID: 2, Got: %d", id)
+			err = deleteLogFile(logFilePath)
+			if err != nil {
+				t.Fatalf("Error removing the file: %v", err)
+			}
+		})
 	}
 }
