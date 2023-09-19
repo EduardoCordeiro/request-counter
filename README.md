@@ -37,13 +37,10 @@ To run the full test suite please run:
 
 `go test -cover  -v ./...`
 
-The 
+## Improvements
 
-## TODO
+Ran into some problems when trying to test the application when using a goroutine,
+so the current implementation is running on a simple function.
 
-2. Tests
-3. Clean up code
-4. Add Makefile to run code + tests
-5. Split tests that are covering valid/invalid in the same test case
-6. Remove test.log after test is done
-7. Tests to main and handlers
+Using the same file for application and testing, which causes some problems when running the
+tests after the applicatin ran. Need to delete the file in order for some tests to pass
