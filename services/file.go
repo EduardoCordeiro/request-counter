@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bufio"
 	"counter/values"
 	"encoding/json"
 	"fmt"
@@ -15,27 +14,6 @@ func FileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-func PrintFileContents(path string) {
-	file, err := os.Open(path)
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	defer file.Close()
-
-	// Create a scanner to read the file line by line.
-	scanner := bufio.NewScanner(file)
-
-	// Print the file contents.
-	fmt.Println("File Contents:")
-	// Loop through each line in the file.
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-	}
 }
 
 func InitFile(filePath string) (bool, error) {
@@ -66,6 +44,8 @@ func InitFile(filePath string) (bool, error) {
 }
 
 func WriteToFile(filePath string, counter *values.LogLine) error {
+	// This functin writes a line to the log file, appending it to do the end of the file,
+	// since we are parsing the file bottom-up
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
@@ -93,5 +73,13 @@ func WriteToFile(filePath string, counter *values.LogLine) error {
 		return err
 	}
 
+	return nil
+}
+
+func DeleteLogFile(logFilePath string) error {
+	err := os.Remove(logFilePath)
+	if err != nil {
+		return err
+	}
 	return nil
 }

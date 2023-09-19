@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
@@ -12,7 +13,7 @@ func parseLogLine(line string) (values.LogLine, error) {
 	var logLine values.LogLine
 	err := json.Unmarshal([]byte(line), &logLine)
 	if err != nil {
-		fmt.Printf("Error unmarshaling JSON: %v\n", err)
+		log.Printf("Error unmarshaling JSON: %v\n", err)
 		return values.LogLine{}, err
 	}
 
@@ -20,7 +21,9 @@ func parseLogLine(line string) (values.LogLine, error) {
 }
 
 func ParseLogFile(filepath string, windowSize int) (int, int, error) {
-	// This code returns the value of the last line, current counter for the ids of the requests
+	// This functin parses a file from the bottom up, to check which previous requests
+	// are inside the window. It returns the number of requests inside the window, the total
+	// request counter and an error.
 
 	file, err := os.Open(filepath)
 

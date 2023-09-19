@@ -7,6 +7,10 @@ import (
 )
 
 func checkDuration(line string, windowSize int) (bool, error) {
+	// Here we check if the current line we parsed is inside the window
+	// Since we are saving the timestamp as RFC3339 (easier to read)
+	// we convert those times and check if the duration between them is less
+	// than the window size
 
 	line = strings.ReplaceAll(line, "\x0A", "")
 	line = strings.ReplaceAll(line, "\n", "")
