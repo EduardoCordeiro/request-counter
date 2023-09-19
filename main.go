@@ -8,7 +8,6 @@ import (
 	"net/http"
 )
 
-const address string = "localhost:8080"
 const windowSize int = 60
 
 var RequestsCounter int
@@ -16,8 +15,8 @@ var CounterID int
 
 var logFilePath string = "requests.log"
 
-func startup() error {
-	exists, err := services.InitFile(logFilePath)
+func startup(path string) error {
+	exists, err := services.InitFile(path)
 
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +24,7 @@ func startup() error {
 	}
 
 	if exists {
-		_, _, err := services.ParseLogFile(logFilePath, windowSize)
+		_, _, err := services.ParseLogFile(path, windowSize)
 
 		if err != nil {
 			log.Fatal(err)
@@ -37,24 +36,21 @@ func startup() error {
 }
 
 func Counter(w http.ResponseWriter, r *http.Request) {
+	response, err := handlers.UpdateCounter(w, logFilePath, windowSize)
 
-	go func() {
-		response, err := handlers.UpdateCounter(w, logFilePath, windowSize)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		panic(err)
+	}
 
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			panic(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(*response)
-	}()
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(*response)
 }
 
 func main() {
 	fmt.Println("Starting Server...")
 
-	err := startup()
+	err := startup(logFilePath)
 	if err != nil {
 		log.Fatal("Server has encountered a problem")
 		panic(err)
